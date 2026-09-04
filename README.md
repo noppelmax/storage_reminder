@@ -1,4 +1,4 @@
-# Weekly Storage Reminder
+# Storage Reminder
 
 [![CI](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.0.1-blue)](https://github.com/noppelmax/storage_reminder/releases)
 
