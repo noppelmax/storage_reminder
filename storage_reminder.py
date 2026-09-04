@@ -13,6 +13,7 @@ from pathlib import Path
 
 
 LOGGER = logging.getLogger(__name__)
+__version__ = "1.0.0"
 
 
 def load_config(config_path: Path) -> configparser.ConfigParser:
@@ -65,6 +66,11 @@ def send_message(config: configparser.ConfigParser, message: EmailMessage) -> No
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     parser.add_argument(
         "--config",
         type=Path,

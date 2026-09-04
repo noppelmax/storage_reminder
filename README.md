@@ -1,6 +1,14 @@
 # Weekly Storage Reminder
 
+[![CI](https://github.com/i56/cron_storage_reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/i56/cron_storage_reminder/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/i56/cron_storage_reminder/releases)
+
 This script runs `du -sh /home/i56/mnoppel/` and emails the resulting human-readable storage usage.
+
+The current version is `1.0.0`. Check it with:
+
+```bash
+./storage_reminder.py --version
+```
 
 ## Setup
 

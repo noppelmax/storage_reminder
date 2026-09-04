@@ -1,4 +1,6 @@
 import configparser
+import contextlib
+import io
 import subprocess
 import sys
 import unittest
@@ -34,6 +36,16 @@ def make_config() -> configparser.ConfigParser:
 
 
 class StorageReminderTests(unittest.TestCase):
+    def test_version_flag(self) -> None:
+        output = io.StringIO()
+        with patch.object(sys, "argv", ["storage_reminder.py", "--version"]):
+            with self.assertRaises(SystemExit) as exit_result:
+                with contextlib.redirect_stdout(output):
+                    storage_reminder.parse_args()
+
+        self.assertEqual(exit_result.exception.code, 0)
+        self.assertEqual(output.getvalue().strip(), "storage_reminder.py 1.0.0")
+
     @patch("storage_reminder.subprocess.run")
     def test_get_storage_usage_returns_size(self, run: Mock) -> None:
         run.return_value.stdout = "42G\t/home/test-user\n"
