@@ -4,6 +4,7 @@
 import argparse
 import configparser
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import smtplib
 import subprocess
@@ -16,21 +17,46 @@ LOGGER = logging.getLogger(__name__)
 __version__ = "1.0.0"
 
 
+def configure_logging(log_file: Path | None = None, verbose: bool = False) -> None:
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    if log_file is not None:
+        handlers.append(
+            RotatingFileHandler(
+                log_file,
+                maxBytes=1_000_000,
+                backupCount=3,
+                encoding="utf-8",
+            )
+        )
+
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+        handlers=handlers,
+        force=True,
+    )
+
+
 def load_config(config_path: Path) -> configparser.ConfigParser:
     config = configparser.ConfigParser()
     if not config.read(config_path):
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
+    LOGGER.info("Loaded configuration from %s", config_path)
     return config
 
 
 def get_storage_usage(directory: str) -> str:
+    LOGGER.info("Checking storage usage for %s", directory)
     result = subprocess.run(
         ["du", "-sh", "--", directory],
         check=True,
         capture_output=True,
         text=True,
     )
-    return result.stdout.split(maxsplit=1)[0]
+    usage = result.stdout.split(maxsplit=1)[0]
+    LOGGER.info("Storage usage for %s is %s", directory, usage)
+    return usage
 
 
 def build_message(config: configparser.ConfigParser, usage: str) -> EmailMessage:
@@ -67,11 +93,15 @@ def send_message(config: configparser.ConfigParser, message: EmailMessage) -> No
     username = smtp.get("username", "")
     password = os.environ.get("STORAGE_REMINDER_SMTP_PASSWORD", smtp.get("password", ""))
 
+    LOGGER.info("Connecting to SMTP server %s:%s", host, port)
     with smtplib.SMTP(host, port, timeout=30) as server:
         if smtp.getboolean("starttls", fallback=True):
+            LOGGER.debug("Starting SMTP TLS")
             server.starttls()
         if username:
+            LOGGER.debug("Authenticating to SMTP server as %s", username)
             server.login(username, password)
+        LOGGER.info("Sending email to %s with subject %r", message["To"], message["Subject"])
         server.send_message(message)
 
 
@@ -98,12 +128,23 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="send a test email without checking storage usage",
     )
+    parser.add_argument(
+        "--log-file",
+        type=Path,
+        help="write rotating logs to this file in addition to stderr",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="enable debug logging",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = parse_args()
+    configure_logging(args.log_file, args.verbose)
+    LOGGER.info("Starting storage reminder")
 
     try:
         config = load_config(args.config)
@@ -116,6 +157,7 @@ def main() -> int:
         usage = get_storage_usage(directory)
         message = build_message(config, usage)
         if args.dry_run:
+            LOGGER.info("Dry run requested; email was not sent")
             print(message)
         else:
             send_message(config, message)
@@ -128,7 +170,7 @@ def main() -> int:
         subprocess.SubprocessError,
         ValueError,
     ) as error:
-        LOGGER.error("Storage reminder failed: %s", error)
+        LOGGER.exception("Storage reminder failed: %s", error)
         return 1
 
     return 0
