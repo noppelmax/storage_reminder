@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.0.1-blue)](https://github.com/noppelmax/storage_reminder/releases)
 
-This script runs `du -sh` for a configured directory and emails the resulting human-readable storage usage.
+This script runs `du -sh` for a configured directory and sends a formatted HTML email only when storage reaches an alert threshold. The warning email uses orange styling; the limit-exceeded email uses red styling. Both emails include a plain-text alternative.
 
 The current version is `1.0.1`. Check it with:
 
@@ -12,11 +12,13 @@ The current version is `1.0.1`. Check it with:
 
 ## Setup
 
-1. Copy `config.example.ini` to `config.ini`, then edit it with the directory, sender, recipient, and SMTP server details:
+1. Copy `config.example.ini` to `config.ini`, then edit it with the directory, alert limits, sender, recipient, and SMTP server details:
 
    ```bash
    cp config.example.ini config.ini
    ```
+
+   The default alert limits are `warning_limit = 200GB` and `limit_exceeded_limit = 250GB`. Values may use bytes or binary units such as `MB`, `GB`, and `TB` (the `du` output forms such as `G` are also accepted).
 
 2. Set the SMTP password. The `STORAGE_REMINDER_SMTP_PASSWORD` environment variable takes precedence over the value in `config.ini`.
 3. Restrict access to the configuration file because it may contain SMTP credentials:
@@ -25,7 +27,7 @@ The current version is `1.0.1`. Check it with:
    chmod 600 config.ini
    ```
 
-4. Test without sending an email:
+4. Test without sending an email. Below the warning limit, the command logs that no email was sent:
 
    ```bash
    ./storage_reminder.py --dry-run

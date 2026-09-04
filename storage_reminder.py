@@ -73,7 +73,7 @@ def get_storage_usage(directory: str) -> str:
 
 def parse_size(value: str) -> int:
     match = re.fullmatch(
-        r"([0-9]+(?:\.[0-9]+)?)\s*(B|KB|MB|GB|TB|PB)?",
+        r"([0-9]+(?:\.[0-9]+)?)\s*(B|K|M|G|T|P|KB|MB|GB|TB|PB)?",
         value.strip().upper(),
     )
     if match is None:
