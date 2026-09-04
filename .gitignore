@@ -1,0 +1,14 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Local environments and secrets
+.venv/
+venv/
+.env
+.env.*
+config.ini
+
+# Runtime output
+*.log
