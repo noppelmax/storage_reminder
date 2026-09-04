@@ -17,7 +17,7 @@ from string import Template
 
 
 LOGGER = logging.getLogger(__name__)
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 BYTES_PER_UNIT = {
     "B": 1,
     "K": 1024,

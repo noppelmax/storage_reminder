@@ -1,10 +1,10 @@
 # Storage Reminder
 
-[![CI](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.0.1-blue)](https://github.com/noppelmax/storage_reminder/releases)
+[![CI](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.0.2-blue)](https://github.com/noppelmax/storage_reminder/releases)
 
 This script runs `du -sh` for a configured directory and sends a formatted HTML email only when storage reaches an alert threshold. The warning email uses orange styling; the limit-exceeded email uses red styling. Both emails include a plain-text alternative.
 
-The current version is `1.0.1`. Check it with:
+The current version is `1.0.2`. Check it with:
 
 ```bash
 ./storage_reminder.py --version
@@ -61,15 +61,15 @@ which python3
 Edit the user crontab with `crontab -e` and add this example, replacing the paths with the values from your system:
 
 ```cron
-0 9 * * 1 /usr/bin/env STORAGE_REMINDER_SMTP_PASSWORD='your-password' /usr/bin/python3 /path/to/cron_storage_reminder/storage_reminder.py --config /path/to/cron_storage_reminder/config.ini >> /path/to/cron_storage_reminder/storage_reminder.log 2>&1
+0 3 * * 1-5 /usr/bin/env STORAGE_REMINDER_SMTP_PASSWORD='your-password' /usr/bin/python3 /path/to/cron_storage_reminder/storage_reminder.py --config /path/to/cron_storage_reminder/config.ini >> /path/to/cron_storage_reminder/storage_reminder.log 2>&1
 ```
 
-This runs every Monday at 09:00 in the server's local timezone. For better secret handling, use a protected wrapper script or the cron service's environment configuration instead of putting the password directly in the crontab.
+This runs every weekday at 03:00 in the server's local timezone. For better secret handling, use a protected wrapper script or the cron service's environment configuration instead of putting the password directly in the crontab.
 
 To install the entry from a shell without opening an editor, run this from the project directory. It removes an older copy of this same entry before adding the current one:
 
 ```bash
-CRON_LINE="0 9 * * 1 /usr/bin/python3 $(pwd)/storage_reminder.py --config $(pwd)/config.ini >> $(pwd)/storage_reminder.log 2>&1"
+CRON_LINE="0 3 * * 1-5 /usr/bin/python3 $(pwd)/storage_reminder.py --config $(pwd)/config.ini >> $(pwd)/storage_reminder.log 2>&1"
 (crontab -l 2>/dev/null | grep -vF "storage_reminder.py --config"; echo "$CRON_LINE") | crontab -
 ```
 

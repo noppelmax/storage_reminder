@@ -48,7 +48,7 @@ class StorageReminderTests(unittest.TestCase):
                     storage_reminder.parse_args()
 
         self.assertEqual(exit_result.exception.code, 0)
-        self.assertEqual(output.getvalue().strip(), "storage_reminder.py 1.0.1")
+        self.assertEqual(output.getvalue().strip(), "storage_reminder.py 1.0.2")
 
     @patch("storage_reminder.subprocess.run")
     def test_get_storage_usage_returns_size(self, run: Mock) -> None:
