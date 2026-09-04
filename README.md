@@ -18,6 +18,16 @@ This script runs `du -sh /home/i56/mnoppel/` and emails the resulting human-read
    ./storage_reminder.py --dry-run
    ```
 
+## Tests
+
+Run the unit tests locally with:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+GitHub Actions runs the tests and Python syntax checks on pushes and pull requests.
+
 ## Cron
 
 Find the absolute paths first:
