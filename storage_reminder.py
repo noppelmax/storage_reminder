@@ -6,15 +6,27 @@ import configparser
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import re
 import smtplib
 import subprocess
 import sys
 from email.message import EmailMessage
+from html import escape
 from pathlib import Path
+from string import Template
 
 
 LOGGER = logging.getLogger(__name__)
 __version__ = "1.0.1"
+BYTES_PER_UNIT = {
+    "B": 1,
+    "K": 1024,
+    "M": 1024**2,
+    "G": 1024**3,
+    "T": 1024**4,
+    "P": 1024**5,
+}
+TEMPLATES_DIRECTORY = Path(__file__).with_name("templates")
 
 
 def configure_logging(log_file: Path | None = None, verbose: bool = False) -> None:
@@ -59,19 +71,72 @@ def get_storage_usage(directory: str) -> str:
     return usage
 
 
-def build_message(config: configparser.ConfigParser, usage: str) -> EmailMessage:
+def parse_size(value: str) -> int:
+    match = re.fullmatch(
+        r"([0-9]+(?:\.[0-9]+)?)\s*(B|KB|MB|GB|TB|PB)?",
+        value.strip().upper(),
+    )
+    if match is None:
+        raise ValueError(f"Invalid storage size: {value}")
+    number, unit = match.groups()
+    return int(float(number) * BYTES_PER_UNIT[(unit or "B")[0]])
+
+
+def get_alert_level(
+    config: configparser.ConfigParser, usage: str
+) -> str | None:
+    storage = config["storage"]
+    usage_bytes = parse_size(usage)
+    warning_limit = parse_size(storage.get("warning_limit", "200GB"))
+    exceeded_limit = parse_size(storage.get("limit_exceeded_limit", "250GB"))
+    if exceeded_limit <= warning_limit:
+        raise ValueError("limit_exceeded_limit must be greater than warning_limit")
+    if usage_bytes >= exceeded_limit:
+        return "limit_exceeded"
+    if usage_bytes >= warning_limit:
+        return "warning"
+    return None
+
+
+def load_template(alert_level: str) -> Template:
+    template_path = TEMPLATES_DIRECTORY / f"{alert_level}.html"
+    return Template(template_path.read_text(encoding="utf-8"))
+
+
+def build_message(
+    config: configparser.ConfigParser, usage: str, alert_level: str
+) -> EmailMessage:
     storage = config["storage"]
     email = config["email"]
     directory = storage.get("directory", "/path/to/directory")
     subject = email.get("subject", "Home directory storage usage")
+    status = (
+        "Storage warning"
+        if alert_level == "warning"
+        else "Storage limit exceeded"
+    )
+    text = (
+        f"{status} for {directory}\n\n"
+        f"Current usage: {usage}\n"
+        f"Warning limit: {storage.get('warning_limit', '200GB')}\n"
+        f"Limit exceeded: {storage.get('limit_exceeded_limit', '250GB')}\n"
+    )
+    html = load_template(alert_level).safe_substitute(
+        status=escape(status),
+        directory=escape(directory),
+        usage=escape(usage),
+        warning_limit=escape(storage.get("warning_limit", "200GB")),
+        limit_exceeded_limit=escape(
+            storage.get("limit_exceeded_limit", "250GB")
+        ),
+    )
 
     message = EmailMessage()
     message["From"] = email["sender"]
     message["To"] = email["recipient"]
-    message["Subject"] = subject
-    message.set_content(
-        f"Storage usage for {directory}: {usage}\n"
-    )
+    message["Subject"] = f"{status}: {subject}"
+    message.set_content(text)
+    message.add_alternative(html, subtype="html")
     return message
 
 
@@ -155,7 +220,11 @@ def main() -> int:
 
         directory = config["storage"].get("directory", "/path/to/directory")
         usage = get_storage_usage(directory)
-        message = build_message(config, usage)
+        alert_level = get_alert_level(config, usage)
+        if alert_level is None:
+            LOGGER.info("Storage usage is below the warning limit; no email sent")
+            return 0
+        message = build_message(config, usage, alert_level)
         if args.dry_run:
             LOGGER.info("Dry run requested; email was not sent")
             print(message)

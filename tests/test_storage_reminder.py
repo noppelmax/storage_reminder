@@ -17,7 +17,11 @@ def make_config() -> configparser.ConfigParser:
     config = configparser.ConfigParser()
     config.read_dict(
         {
-            "storage": {"directory": "/home/test-user"},
+            "storage": {
+                "directory": "/home/test-user",
+                "warning_limit": "200GB",
+                "limit_exceeded_limit": "250GB",
+            },
             "email": {
                 "sender": "sender@example.com",
                 "recipient": "recipient@example.com",
@@ -65,13 +69,37 @@ class StorageReminderTests(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             storage_reminder.get_storage_usage("/missing")
 
-    def test_build_message_contains_usage(self) -> None:
-        message = storage_reminder.build_message(make_config(), "42G")
+    def test_parse_size_accepts_human_readable_units(self) -> None:
+        self.assertEqual(storage_reminder.parse_size("200GB"), 200 * 1024**3)
+        self.assertEqual(storage_reminder.parse_size("1.5T"), int(1.5 * 1024**4))
+
+    def test_alert_level_uses_warning_and_exceeded_limits(self) -> None:
+        config = make_config()
+
+        self.assertIsNone(storage_reminder.get_alert_level(config, "199G"))
+        self.assertEqual(storage_reminder.get_alert_level(config, "200G"), "warning")
+        self.assertEqual(
+            storage_reminder.get_alert_level(config, "250G"), "limit_exceeded"
+        )
+
+    def test_build_message_contains_usage_and_html(self) -> None:
+        message = storage_reminder.build_message(make_config(), "200G", "warning")
 
         self.assertEqual(message["From"], "sender@example.com")
         self.assertEqual(message["To"], "recipient@example.com")
-        self.assertEqual(message["Subject"], "Storage report")
-        self.assertIn("Storage usage for /home/test-user: 42G", message.get_content())
+        self.assertEqual(message["Subject"], "Storage warning: Storage report")
+        self.assertIn("Current usage: 200G", message.get_body(preferencelist=("plain",)).get_content())
+        self.assertIn("#f97316", message.get_body(preferencelist=("html",)).get_content())
+
+    def test_main_does_not_send_below_warning_limit(self) -> None:
+        with patch.object(sys, "argv", ["storage_reminder.py"]):
+            with patch.object(storage_reminder, "load_config", return_value=make_config()):
+                with patch.object(storage_reminder, "get_storage_usage", return_value="199G"):
+                    with patch.object(storage_reminder, "send_message") as send_message:
+                        result = storage_reminder.main()
+
+        self.assertEqual(result, 0)
+        send_message.assert_not_called()
 
     def test_test_email_option_sends_without_checking_storage(self) -> None:
         with patch.object(sys, "argv", ["storage_reminder.py", "--test-email"]):
@@ -90,7 +118,7 @@ class StorageReminderTests(unittest.TestCase):
     @patch.dict("storage_reminder.os.environ", {"STORAGE_REMINDER_SMTP_PASSWORD": "environment-password"})
     def test_send_message_uses_environment_password(self, smtp_class: Mock) -> None:
         server = smtp_class.return_value.__enter__.return_value
-        message = storage_reminder.build_message(make_config(), "42G")
+        message = storage_reminder.build_message(make_config(), "200G", "warning")
 
         storage_reminder.send_message(make_config(), message)
 
