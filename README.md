@@ -1,10 +1,10 @@
 # Weekly Storage Reminder
 
-[![CI](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/noppelmax/storage_reminder/releases)
+[![CI](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.0.1-blue)](https://github.com/noppelmax/storage_reminder/releases)
 
 This script runs `du -sh` for a configured directory and emails the resulting human-readable storage usage.
 
-The current version is `1.0.0`. Check it with:
+The current version is `1.0.1`. Check it with:
 
 ```bash
 ./storage_reminder.py --version

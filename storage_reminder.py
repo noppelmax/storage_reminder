@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 LOGGER = logging.getLogger(__name__)
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 def configure_logging(log_file: Path | None = None, verbose: bool = False) -> None:
