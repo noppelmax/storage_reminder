@@ -73,6 +73,19 @@ class StorageReminderTests(unittest.TestCase):
         self.assertEqual(message["Subject"], "Storage report")
         self.assertIn("Storage usage for /home/test-user: 42G", message.get_content())
 
+    def test_test_email_option_sends_without_checking_storage(self) -> None:
+        with patch.object(sys, "argv", ["storage_reminder.py", "--test-email"]):
+            with patch.object(storage_reminder, "load_config", return_value=make_config()):
+                with patch.object(storage_reminder, "send_message") as send_message:
+                    with patch.object(storage_reminder, "get_storage_usage") as get_storage_usage:
+                        result = storage_reminder.main()
+
+        self.assertEqual(result, 0)
+        get_storage_usage.assert_not_called()
+        sent_message = send_message.call_args.args[1]
+        self.assertEqual(sent_message["Subject"], "Test: Storage report")
+        self.assertIn("This is a test email", sent_message.get_content())
+
     @patch("storage_reminder.smtplib.SMTP")
     @patch.dict("storage_reminder.os.environ", {"STORAGE_REMINDER_SMTP_PASSWORD": "environment-password"})
     def test_send_message_uses_environment_password(self, smtp_class: Mock) -> None:

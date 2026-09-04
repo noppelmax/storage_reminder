@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/noppelmax/storage_reminder/actions/workflows/ci.yml) [![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/noppelmax/storage_reminder/releases)
 
-This script runs `du -sh /home/i56/mnoppel/` and emails the resulting human-readable storage usage.
+This script runs `du -sh` for a configured directory and emails the resulting human-readable storage usage.
 
 The current version is `1.0.0`. Check it with:
 
@@ -31,6 +31,12 @@ The current version is `1.0.0`. Check it with:
    ./storage_reminder.py --dry-run
    ```
 
+5. Send a test email to verify the SMTP settings:
+
+   ```bash
+   ./storage_reminder.py --test-email
+   ```
+
 ## Tests
 
 Run the unit tests locally with:
@@ -53,7 +59,7 @@ which python3
 Edit the user crontab with `crontab -e` and add this example, replacing the paths with the values from your system:
 
 ```cron
-0 9 * * 1 /usr/bin/env STORAGE_REMINDER_SMTP_PASSWORD='your-password' /usr/bin/python3 /home/i56/cron_storage_reminder/storage_reminder.py --config /home/i56/cron_storage_reminder/config.ini >> /home/i56/cron_storage_reminder/storage_reminder.log 2>&1
+0 9 * * 1 /usr/bin/env STORAGE_REMINDER_SMTP_PASSWORD='your-password' /usr/bin/python3 /path/to/cron_storage_reminder/storage_reminder.py --config /path/to/cron_storage_reminder/config.ini >> /path/to/cron_storage_reminder/storage_reminder.log 2>&1
 ```
 
 This runs every Monday at 09:00 in the server's local timezone. For better secret handling, use a protected wrapper script or the cron service's environment configuration instead of putting the password directly in the crontab.

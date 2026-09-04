@@ -36,7 +36,7 @@ def get_storage_usage(directory: str) -> str:
 def build_message(config: configparser.ConfigParser, usage: str) -> EmailMessage:
     storage = config["storage"]
     email = config["email"]
-    directory = storage.get("directory", "/home/i56/mnoppel")
+    directory = storage.get("directory", "/path/to/directory")
     subject = email.get("subject", "Home directory storage usage")
 
     message = EmailMessage()
@@ -46,6 +46,17 @@ def build_message(config: configparser.ConfigParser, usage: str) -> EmailMessage
     message.set_content(
         f"Storage usage for {directory}: {usage}\n"
     )
+    return message
+
+
+def build_test_message(config: configparser.ConfigParser) -> EmailMessage:
+    email = config["email"]
+
+    message = EmailMessage()
+    message["From"] = email["sender"]
+    message["To"] = email["recipient"]
+    message["Subject"] = f"Test: {email.get('subject', 'Storage reminder')}"
+    message.set_content("This is a test email from the storage reminder.")
     return message
 
 
@@ -82,6 +93,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="print the email instead of sending it",
     )
+    parser.add_argument(
+        "--test-email",
+        action="store_true",
+        help="send a test email without checking storage usage",
+    )
     return parser.parse_args()
 
 
@@ -91,7 +107,12 @@ def main() -> int:
 
     try:
         config = load_config(args.config)
-        directory = config["storage"].get("directory", "/home/i56/mnoppel")
+        if args.test_email:
+            send_message(config, build_test_message(config))
+            LOGGER.info("Test email sent to %s", config["email"]["recipient"])
+            return 0
+
+        directory = config["storage"].get("directory", "/path/to/directory")
         usage = get_storage_usage(directory)
         message = build_message(config, usage)
         if args.dry_run:
