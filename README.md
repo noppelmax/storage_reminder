@@ -12,7 +12,12 @@ The current version is `1.0.0`. Check it with:
 
 ## Setup
 
-1. Edit `config.ini` with the directory, sender, recipient, and SMTP server details.
+1. Copy `config.example.ini` to `config.ini`, then edit it with the directory, sender, recipient, and SMTP server details:
+
+   ```bash
+   cp config.example.ini config.ini
+   ```
+
 2. Set the SMTP password. The `STORAGE_REMINDER_SMTP_PASSWORD` environment variable takes precedence over the value in `config.ini`.
 3. Restrict access to the configuration file because it may contain SMTP credentials:
 
